@@ -1,6 +1,11 @@
 buildscript {
+    ext {
+        verifier_version = "1.2.3.RELEASE"
+    }
+
     dependencies {
         classpath "gradle.plugin.com.gorylenko.gradle-git-properties:gradle-git-properties:1.4.20"
+        classpath "org.springframework.cloud:spring-cloud-contract-gradle-plugin:${verifier_version}"
     }
 }
 
@@ -14,6 +19,7 @@ apply plugin: 'java'
 apply plugin: 'groovy'
 apply plugin: 'jacoco'
 
+
 if (buildStage()) {
     apply plugin: "com.gorylenko.gradle-git-properties"
     apply from: "${rootProject.projectDir}/gradle/checkstyle.gradle"
@@ -22,6 +28,7 @@ if (buildStage()) {
     apply from: "${rootProject.projectDir}/gradle/build-version.gradle"
     apply from: "${rootProject.projectDir}/gradle/boot-info.gradle"
     apply from: "${rootProject.projectDir}/gradle/maven-publish.gradle"
+    apply from: "${rootProject.projectDir}/gradle/contract.gradle"
 }
 
 group = 'com.github.hippoom'
@@ -30,6 +37,7 @@ sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
 tasks.withType(JavaCompile) { options.encoding = 'utf-8' }
+
 
 repositories {
     mavenLocal()
@@ -40,6 +48,7 @@ dependencyManagement {
     imports {
         mavenBom "io.spring.platform:platform-bom:Brussels-SR5"
         mavenBom "org.springframework.cloud:spring-cloud-dependencies:Dalston.SR4"
+        mavenBom "org.springframework.cloud:spring-cloud-contract-dependencies:${verifier_version}"
     }
 
     dependencies {
@@ -60,17 +69,22 @@ dependencies {
     compile("org.springframework.boot:spring-boot-starter-actuator")
 
     // security
-    compile "org.springframework.boot:spring-boot-starter-security"
-    testCompile group: 'org.springframework.security', name: 'spring-security-test', version: '4.2.3.RELEASE'
+//    compile "org.springframework.boot:spring-boot-starter-security"
+//    testCompile group: 'org.springframework.security', name: 'spring-security-test', version: '4.2.3.RELEASE'
 
     // tests frameworks
     testCompile("org.springframework.boot:spring-boot-starter-test")
     testCompile("org.hamcrest:hamcrest-all:1.3")
     testCompile group: 'org.codehaus.groovy', name: 'groovy-all', version: '2.4.12'
-
+    // example with adding Spock core and Spock Spring
+    testCompile 'org.spockframework:spock-core:1.1-groovy-2.4'
+    testCompile 'org.spockframework:spock-spring:1.1-groovy-2.4'
+    testCompile group: 'net.bytebuddy', name: 'byte-buddy', version: '1.7.9'
 
     // test helper
     testCompile group: 'com.github.hippoom', name: 'test-data-builder', version: '0.2.0'
+
+    testCompile 'org.springframework.cloud:spring-cloud-starter-contract-verifier'
 
 }
 
@@ -89,7 +103,7 @@ jacocoTestReport {
     afterEvaluate {
         classDirectories = files(classDirectories.files.collect {
             fileTree(dir: it,
-                exclude: ['**/model/**/Q**'])
+                    exclude: ['**/model/**/Q**'])
         })
     }
 }
